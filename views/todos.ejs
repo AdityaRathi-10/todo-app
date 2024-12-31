@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Categories</title>
+    <link rel="stylesheet" href="/styles/todos.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+    <style>
+      p {
+        outline: none;
+        border: none;
+      }
+
+      .class1 {
+        border-bottom: 1px solid white;
+      }
+    </style>
+  </head>
+  <body>
+    <form action="/user/logout" method="post" style="float: right;"> 
+      <button type="submit" style="padding: 8px 18px; text-align: center; font-size: 17px; background-color: rgb(255, 51, 51); color: white; border-radius: 10px; border: none; cursor: pointer; margin: 10px;" >Logout</button>
+    </form>
+
+    <div class="container">
+      <h1>
+        Hi <span><%= user[0].username %></span>, what's on your mind for
+        today...
+      </h1>
+
+      <form action="/todo/create" method="post">
+        <div class="create-container">
+          <div>
+            <label for="">Category</label>
+            <input type="text" name="title" placeholder="Enter category" />
+          </div>
+          <div>
+            <label for="">Description</label>
+            <textarea
+              type="text"
+              name="content"
+              placeholder="Enter description"
+            ></textarea>
+          </div>
+          <button type="submit">
+            Add Todo <span class="material-symbols-outlined" style="font-size: 21px;">add</span>
+          </button>
+        </div>
+      </form>
+
+      <% if (dateWiseTodos.length > 0) { %> <% dateWiseTodos.forEach(item => { %>
+        <div style="display: flex; gap: 20px">
+          <div>
+            <h3 style="margin-left: 25px; color: aquamarine"><%= item.date %></h3>
+            <p style="background-color: aquamarine; height: 2px; width: 120px; margin-left: 15px;"></p>
+          </div>
+        </div>
+      <div class="card-container">
+        <% item.todos.forEach(todo => { %>
+        <div style="margin: 20px" class="card" id="todo-<%= todo._id %>">
+          <div class="title-container">
+            <h2 class="title" id="title-<%= todo._id %>"><%= todo.title %></h2>
+            <button
+              class="update-title material-symbols-outlined tooltip"
+              value="<%= todo._id %>"
+            >
+              edit
+              <span class="tooltip-text">Edit title</span>
+            </button>
+          </div>
+          <p
+            style="
+              text-align: right;
+              font-size: 12px;
+              color: aqua;
+              margin-top: 5px;
+            "
+          >
+            <%= todo.createdAt.toLocaleTimeString() || "" %>
+          </p>
+          <div class="content-container">
+            <p class="content" id="content-<%= todo._id %>">
+              <%= todo.content %>
+            </p>
+          </div>
+          <div class="button-container">
+            <button
+              class="update-content material-symbols-outlined tooltip edit"
+              value="<%= todo._id %>"
+            >
+              edit_note
+              <span class="tooltip-text">Edit description</span>
+            </button>
+            <form
+              action="/todo/st/<%= todo._id %>"
+              method="get"
+              class="subtodos"
+            >
+              <button type="submit" class="material-symbols-outlined tooltip">
+                quick_reference_all
+                <span class="tooltip-text">Go to Subtodos</span>
+              </button>
+            </form>
+            <form
+              action="/todo/delete/<%= todo._id %>"
+              method="post"
+              class="delete"
+            >
+              <button type="submit" class="material-symbols-outlined tooltip">
+                delete
+                <span class="tooltip-text">Delete Todo</span>
+              </button>
+            </form>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+      <% }) %> <% } else { %>
+      <p>No categories available yet!!</p>
+      <% } %>
+    </div>
+    <script>
+  
+      function randomColorGenerator() {
+        let rand1 = Math.floor(Math.random() * 156) + 100
+        let rand2 = Math.floor(Math.random() * 156) + 100
+        let rand3 = Math.floor(Math.random() * 156) + 100
+
+        return `rgb(${rand1}, ${rand2}, ${rand3})`;
+      }
+
+      const titles = document.querySelectorAll(".title");
+      const cards = document.querySelectorAll(".card")
+
+      titles.forEach((title) => {
+        let color = randomColorGenerator();
+        title.style.color = `${color}`;
+      });
+
+      cards.forEach((card) => {
+        let color = randomColorGenerator();
+        card.style.boxShadow = `1px 1px 10px ${color}`;
+        card.style.border = `2px solid ${color}`
+      })
+
+      const updateTitleButtons = document.querySelectorAll(".update-title");
+      const updateContentButtons = document.querySelectorAll(".update-content");
+
+      updateTitleButtons.forEach((updateTitleButton) => {
+        updateTitleButton.addEventListener("click", (e) => {
+          const todoId = e.target.value;
+          const titleInput = document.querySelector(`#title-${todoId}`);
+          titleInput.contentEditable = true;
+          titleInput.classList.add("class1");
+
+          const saveBtn = document.createElement("button");
+          saveBtn.classList.add("material-symbols-outlined", "tooltip");
+          saveBtn.innerText = "save";
+          saveBtn.style.color = "white";
+          const spanEle = document.createElement("span");
+          spanEle.innerText = "Save title";
+          spanEle.classList.add("tooltip-text");
+          saveBtn.appendChild(spanEle);
+          saveBtn.type = "button";
+          e.target.replaceWith(saveBtn);
+
+          saveBtn.addEventListener("click", async () => {
+            const newTitle = titleInput.innerText;
+            const response = await fetch(`/todo/update/${todoId}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ title: newTitle }),
+            });
+            console.log("title", response);
+
+            const data = await response.json();
+            if (response.ok) {
+              titleInput.classList.remove("class1");
+              titleInput.contentEditable = false;
+              saveBtn.replaceWith(updateTitleButton);
+            } else {
+              alert("Failed to update title");
+            }
+          });
+        });
+      })
+
+      updateContentButtons.forEach((updateContentButton) => {
+        updateContentButton.addEventListener("click", (e) => {
+          const todoId = e.target.value;
+          const contentParagraph = document.querySelector(`#content-${todoId}`);
+          contentParagraph.contentEditable = true;
+          contentParagraph.classList.add("class1");
+
+          const saveBtn = document.createElement("button");
+          saveBtn.classList.add("material-symbols-outlined", "tooltip");
+          saveBtn.innerText = "save";
+          saveBtn.style.color = "rgb(255, 0, 255)";
+          saveBtn.style.border = "1px solid rgb(255, 0, 255)";
+          saveBtn.style.borderRadius = "50%";
+          const spanEle = document.createElement("span");
+          spanEle.innerText = "Save content";
+          spanEle.classList.add("tooltip-text");
+          saveBtn.appendChild(spanEle);
+          saveBtn.type = "button";
+          e.target.replaceWith(saveBtn);
+
+          saveBtn.addEventListener("click", async () => {
+            const newContent = contentParagraph.innerText;
+            const response = await fetch(`/todo/update/${todoId}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ content: newContent }),
+            });
+            console.log("res", response);
+
+            const data = await response.json();
+            if (response.ok) {
+              contentParagraph.classList.remove("class1");
+              contentParagraph.contentEditable = false;
+              saveBtn.replaceWith(updateContentButton);
+            } else {
+              alert("Failed to update content");
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

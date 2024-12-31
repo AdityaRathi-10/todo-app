@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Tasks</title>
+    <link rel="stylesheet" href="/styles/subTodos.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+    <style>
+      p {
+        outline: none;
+        border: none;
+      }
+      .class1 {
+        border-bottom: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <form action="/user/logout" method="post" style="float: right; margin-top: 10px;"> 
+      <button type="submit" style="padding: 6px 20px; text-align: center; font-size: 17px; background-color: rgb(255, 51, 51); color: white; border-radius: 10px; border: none; cursor: pointer; margin: 10px;" >Logout</button>
+    </form>
+    <a href="/user/<%= id %>/todos">Go back</a>
+
+    <h1>Let's see what on your <span><%= title %> </span> list</h1>
+
+    <form action="/sub-todo/create" method="post">
+      <div class="create-container">
+        <div>
+          <input type="hidden" name="id" value="<%= id %>" />
+          <label for="">Task</label>
+          <textarea name="content" id="" placeholder="Enter a task"></textarea>
+        </div>
+        <button type="submit">
+          Add Task <span class="material-symbols-outlined" style="font-size: 22px;">add</span>
+        </button>
+      </div>
+    </form>
+
+    <% if (subTodos.length > 0) { %>
+      <% subTodos.forEach(item => { %>
+        <p style="font-size: 20px; font-weight: bold; margin-top: 15px; margin-left: 20px;"><%= item.date %></p>
+        <p style="background-color: white; height: 2px; width: 130px; margin-left: 10px;"></p>
+        <div class="sub-todo-container">
+          <% item.subTodos.forEach(subTodo => { %>
+          <div class="main-todo" id="sub-todo-<%= subTodo._id %>" value=<%= subTodo._id %>>
+            <p style="color: darkblue; font-size: 13px; margin-bottom: -7px; margin-top: 10px; margin-right: 20px; text-align: right;">
+              <%= subTodo.createdAt.toLocaleTimeString() %>
+            </p>
+            <div class="content-container">
+              <% if (!subTodo.isCompleted) { %>
+                <button class="status" style="background-color: transparent; border: none;" value=<%= subTodo._id %>>
+                  <span class="material-symbols-outlined" style="color: black; text-shadow: 1px 1px 10px white; cursor: pointer; margin-left: 4px;" value=<%= subTodo._id %>>
+                    check_box_outline_blank
+                  </span>
+                </button>
+                <% } else { %>
+                  <span class="material-symbols-outlined" style="color: green; text-shadow: 1px 1px 10px rgb(0, 255, 0); font-size: 40px;">
+                    task_alt
+                  </span>
+                  <% } %>
+                  <p class="content" id="content-<%= subTodo._id %>">
+                    <%= subTodo.content %>
+                  </p>
+                </div>
+                <div class="button-container">
+                  <div class="first-button">
+                    <% if (!subTodo.isCompleted) { %>
+                      <button
+                      class="update-content material-symbols-outlined tooltip"
+                      id="update-content-<%= subTodo._id %>"
+                      value="<%= subTodo._id %>"
+                      >
+                      edit
+                      <span class="tooltip-text">Edit task</span>
+                    </button>
+                    <% } %>
+                  </div>
+                  
+                  <form action="/sub-todo/delete/<%= subTodo._id %>" method="post">
+                    <input type="hidden" name="id" value=<%= id %> />
+                    <button type="submit" class="material-symbols-outlined tooltip delete-content" id="delete-content-<%= subTodo._id %>" value=<%= subTodo._id %>>
+                      delete
+                      <span class="tooltip-text">Delete task</span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+              <% }) %>
+            </div>
+            <% }) %>
+    <% } else { %>
+    <p>No tasks yet here!</p>
+    <% } %>
+
+    <script>
+      
+        function randomColorGenerator(){
+          let rand1 = Math.floor(Math.random()*136)+120
+          let rand2 = Math.floor(Math.random()*136)+120
+          let rand3 = Math.floor(Math.random()*136)+120
+
+          return `rgb(${rand1}, ${rand2}, ${rand3})`
+        }
+
+        const mainTodos = document.querySelectorAll(".main-todo")
+
+        mainTodos.forEach((mainTodo) => {
+          let color = randomColorGenerator()
+          mainTodo.style.boxShadow = `1px 1px 10px ${color}`
+          mainTodo.style.backgroundColor = `${color}`
+        })
+
+        const updateContentButtons = document.querySelectorAll(".update-content");
+        const statusCheckBoxes = document.querySelectorAll(".status")
+
+        statusCheckBoxes.forEach((statusCheckBox) => {
+            statusCheckBox.addEventListener("click", async (e) => {
+                const subTodoId = e.currentTarget.value
+                const subTodo = document.querySelector(`#sub-todo-${subTodoId}`);
+                const spanIcon = document.createElement('span');
+                spanIcon.classList.add('material-symbols-outlined');
+                spanIcon.style.fontSize = "40px"
+                spanIcon.style.color = "green"
+                spanIcon.style.textShadow = "1px 1px 10px rgb(0, 255, 0)"
+                spanIcon.innerText = 'task_alt';
+                e.target.replaceWith(spanIcon)
+
+                const updateButton = document.querySelector(`#update-content-${subTodoId}`)
+                updateButton.style.display = "none"
+
+                const response = await fetch(`/sub-todo/update/${subTodoId}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ isCompleted: true })
+                })
+
+                const data = await response.json();
+                if (response.ok) {
+                    
+                } else {
+                    alert("Failed to update content");
+                }
+            })
+        })
+
+      updateContentButtons.forEach((updateContentButton) => {
+        updateContentButton.addEventListener("click", (e) => {
+          const todoId = e.target.value;
+          const contentParagraph = document.querySelector(`#content-${todoId}`);
+          contentParagraph.contentEditable = true;
+          contentParagraph.classList.add("class1");
+
+            const saveBtn = document.createElement("button");
+            saveBtn.classList.add("material-symbols-outlined", "tooltip");
+            saveBtn.innerText = "save";
+            saveBtn.style.color = "purple";
+            const spanEle = document.createElement("span");
+            spanEle.innerText = "Save task";
+            spanEle.classList.add("tooltip-text");
+            saveBtn.appendChild(spanEle);
+            saveBtn.type = "button";
+            e.target.replaceWith(saveBtn);
+
+            saveBtn.addEventListener("click", async () => {
+              const newContent = contentParagraph.innerText;
+              const response = await fetch(`/sub-todo/update/${todoId}`, {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ content: newContent }),
+              });
+
+              const data = await response.json();
+              if (response.ok) {
+                contentParagraph.classList.remove("class1");
+                contentParagraph.contentEditable = false;
+                saveBtn.replaceWith(updateContentButton);
+              } else {
+                alert("Failed to update content");
+              }
+            });
+          });
+        });
+    </script>
+  </body>
+</html>
